@@ -104,3 +104,46 @@ survivor-network/
 │   └── vite.config.ts  # Vite Configuration
 └── spanner-key.json    # GCP Credentials (Do not commit!)
 ```
+
+## Hybrid Search Test Queries
+
+Use these queries to test if the "Smart Router" is correctly choosing the best search method.
+
+### 🔀 Hybrid Search (The "Smart" Queries)
+
+These should trigger the Hybrid method because they combine specific constraints with natural language.
+
+-   **"Find someone with healing skills in the mountains"**
+    -   *Why*: Combines semantic ("healing") + location filter ("mountains").
+-   **"Who can build a shelter in the forest?"**
+    -   *Why*: Combines semantic ("build a shelter" ≈ construction) + location filter ("forest").
+-   **"I need food and water resources near the river"**
+    -   *Why*: Multiple concepts + location context.
+-   **"Survivors with combat abilities for defense"**
+    -   *Why*: "Combat" is a category, "defense" is semantic context.
+
+### 🧬 RAG / Semantic Search (Conceptual)
+
+These should trigger the RAG (Semantic) method because they are vague or ask for similarity.
+
+-   **"Find skills similar to first aid"**
+    -   *Why*: Explicit "similar to" trigger.
+-   **"Who is good at fixing injuries?"**
+    -   *Why*: "Fixing injuries" doesn't match a specific skill name, requires understanding it means "medical/first aid".
+-   **"Looking for a leader"**
+    -   *Why*: Abstract concept, likely no skill named "leader".
+-   **"Who can help with psychological trauma?"**
+    -   *Why*: Complex medical concept, likely maps to "comfort" or "counseling" skills.
+
+### 🔤 Keyword Search (Exact Matches)
+
+These should trigger the Keyword method because they are specific and direct.
+
+-   **"List all medical skills"**
+    -   *Why*: "Medical" is a likely category name.
+-   **"Who is in the forest biome?"**
+    -   *Why*: Pure location filter.
+-   **"Find survivors with the fishing skill"**
+    -   *Why*: "Fishing" is a specific skill name.
+-   **"Show me combat specialists"**
+    -   *Why*: "Combat" is a category.
