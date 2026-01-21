@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 upload_agent = LlmAgent(
     name="UploadAgent",
-    model="gemini-1.5-flash",
+    model="gemini-2.5-flash",
     instruction="""Extract the file path from the user's message and upload it.
 
 Use `upload_media(file_path, survivor_id)` to upload the file.
@@ -25,7 +25,7 @@ Return the upload result with gcs_uri and media_type.""",
 
 extraction_agent = LlmAgent(
     name="ExtractionAgent", 
-    model="gemini-1.5-flash",
+    model="gemini-2.5-flash",
     instruction="""Extract information from the uploaded media.
 
 Previous step result: {upload_result}
@@ -40,7 +40,7 @@ Return the extraction results including entities and relationships found.""",
 
 spanner_agent = LlmAgent(
     name="SpannerAgent",
-    model="gemini-1.5-flash", 
+    model="gemini-2.5-flash", 
     instruction="""Save the extracted information to the database.
 
 Upload result: {upload_result}
@@ -57,7 +57,7 @@ Return the save statistics.""",
 
 summary_agent = LlmAgent(
     name="SummaryAgent",
-    model="gemini-1.5-flash",
+    model="gemini-2.5-flash",
     instruction="""Provide a user-friendly summary of the media processing.
 
 Upload: {upload_result}
