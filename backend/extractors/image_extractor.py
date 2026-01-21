@@ -22,7 +22,7 @@ class ImageExtractor(BaseExtractor):
             project=settings.PROJECT_ID, 
             location=settings.LOCATION
         )
-        self.model_name = 'gemini-1.5-flash'
+        self.model_name = 'gemini-2.5-flash'
         self.gcs_service = GCSService()
     
     def _get_extraction_prompt(self) -> str:

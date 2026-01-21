@@ -9,9 +9,16 @@ from agent.multimedia_agent import multimedia_agent
 from config import settings
 import uuid
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Ensure env vars are set for GenAI SDK
+if settings.GOOGLE_API_KEY and "GOOGLE_API_KEY" not in os.environ:
+    os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
+if settings.PROJECT_ID and "GOOGLE_CLOUD_PROJECT" not in os.environ:
+    os.environ["GOOGLE_CLOUD_PROJECT"] = settings.PROJECT_ID
+if settings.LOCATION and "GOOGLE_CLOUD_LOCATION" not in os.environ:
+    os.environ["GOOGLE_CLOUD_LOCATION"] = settings.LOCATION
 
 from tools import extraction_tools
 

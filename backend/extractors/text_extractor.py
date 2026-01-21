@@ -24,14 +24,12 @@ class TextExtractor(BaseExtractor):
             project=settings.PROJECT_ID, 
             location=settings.LOCATION
         )
-        self.model_name = 'gemini-2.0-flash-exp' # Or 1.5-pro, 1.5-flash. Using flash for speed/cost.
+        self.model_name = 'gemini-2.5-flash' # Using flash for speed/cost.
         # Note: 'gemini-2.5-flash' mentioned in user prompt might not be available yet publicly, 
         # sticking to a known model or the user's string if appropriate. 
-        # User prompt had gemini-2.5-flash. I will use 'gemini-1.5-flash' as a safe default 
-        # or 'gemini-experimental' if they want cutting edge. 
+        # User prompt had gemini-2.5-flash. 
         # Actually, let's try to use what they asked but fallback if needed. 
-        # 'gemini-1.5-flash' is safe.
-        self.model_name = 'gemini-1.5-flash' 
+        # 'gemini-2.5-flash' is safe.
         
         self.gcs_service = GCSService()
         
