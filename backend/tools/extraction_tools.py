@@ -80,9 +80,7 @@ async def extract_from_media(gcs_uri: str, media_type: str) -> Dict[str, Any]:
         
         return {
             "status": "success",
-            "extraction_result": result, # Note: This object might not be serializable directly by some agents if they expect pure JSON. 
-                                         # But sequential agent passes objects in internal state.
-                                         # For the output summary, we might need dicts.
+            "extraction_result": result.to_dict(), # Return valid JSON dict instead of object
             "summary": result.summary,
             "entities_count": len(result.entities),
             "relationships_count": len(result.relationships),
@@ -110,6 +108,11 @@ def save_to_spanner(extraction_result: Any, survivor_id: Optional[str] = None) -
         result_obj = extraction_result
         if isinstance(extraction_result, dict) and 'extraction_result' in extraction_result:
              result_obj = extraction_result['extraction_result']
+        
+        # If result_obj is a dict (from to_dict()), reconstruct it
+        if isinstance(result_obj, dict):
+            from extractors.base_extractor import ExtractionResult
+            result_obj = ExtractionResult.from_dict(result_obj)
         
         if not result_obj:
             return {"status": "error", "error": "No extraction result provided"}

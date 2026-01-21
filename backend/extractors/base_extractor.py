@@ -36,6 +36,15 @@ class ExtractedEntity:
             "confidence": self.confidence
         }
 
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ExtractedEntity':
+        return cls(
+            entity_type=EntityType(data['entity_type']),
+            name=data['name'],
+            properties=data.get('properties', {}),
+            confidence=data.get('confidence', 1.0)
+        )
+
 @dataclass
 class ExtractedRelationship:
     """Relationship extracted - maps to your edge tables"""
@@ -53,6 +62,16 @@ class ExtractedRelationship:
             "properties": self.properties,
             "confidence": self.confidence
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ExtractedRelationship':
+        return cls(
+            relationship_type=RelationshipType(data['relationship_type']),
+            source_name=data['source'],
+            target_name=data['target'],
+            properties=data.get('properties', {}),
+            confidence=data.get('confidence', 1.0)
+        )
 
 @dataclass
 class ExtractionResult:
@@ -73,10 +92,26 @@ class ExtractionResult:
             "media_type": self.media_type,
             "entities": [e.to_dict() for e in self.entities],
             "relationships": [r.to_dict() for r in self.relationships],
+            "raw_content": self.raw_content,
             "summary": self.summary,
             "broadcast_info": self.broadcast_info,
-            "metadata": self.metadata
+            "metadata": self.metadata,
+            "extracted_at": self.extracted_at.isoformat()
         }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'ExtractionResult':
+        return cls(
+            media_uri=data['media_uri'],
+            media_type=data['media_type'],
+            entities=[ExtractedEntity.from_dict(e) for e in data.get('entities', [])],
+            relationships=[ExtractedRelationship.from_dict(r) for r in data.get('relationships', [])],
+            raw_content=data.get('raw_content', ""),
+            summary=data.get('summary', ""),
+            broadcast_info=data.get('broadcast_info'),
+            metadata=data.get('metadata', {}),
+            extracted_at=datetime.fromisoformat(data['extracted_at']) if 'extracted_at' in data else datetime.utcnow()
+        )
 
 class BaseExtractor(ABC):
     """Base class for media extractors"""

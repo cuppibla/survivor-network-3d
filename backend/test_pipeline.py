@@ -8,6 +8,7 @@ from google.genai.types import Content, Part
 from agent.multimedia_agent import multimedia_agent
 from config import settings
 import uuid
+from google.cloud import storage
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,6 +44,22 @@ Timestamp: 2026-05-12 14:00
              f.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82')
 
     print("Test files checked/created.")
+
+async def create_test_bucket():
+    """Creates a new GCS bucket for testing."""
+    bucket_name = f"test-bucket-{uuid.uuid4()}"
+    print(f"Creating test bucket: {bucket_name}")
+    
+    try:
+        # Use simple instantiation if PROJECT_ID is set in env/default
+        # Otherwise use project from settings
+        storage_client = storage.Client(project=settings.PROJECT_ID)
+        bucket = storage_client.create_bucket(bucket_name, location="us-central1")
+        print(f"Bucket {bucket.name} created.")
+        return bucket_name
+    except Exception as e:
+        print(f"Failed to create bucket: {e}")
+        return None
 
 def mock_save_to_spanner(extraction_result, survivor_id=None):
     """Verbose mock that prints what would happen"""
@@ -97,6 +114,24 @@ async def run_test(dry_run=True):
     print(f"--- Starting Pipeline Verification (Dry Run: {dry_run}) ---")
     setup_test_files()
     
+    # Create a new bucket
+    new_bucket_name = await create_test_bucket()
+    if not new_bucket_name:
+        print("Skipping test due to bucket creation failure.")
+        return
+
+    # Override settings to use the new bucket
+    print(f"Overriding settings.GCS_BUCKET_NAME to {new_bucket_name}")
+    original_bucket_name = settings.GCS_BUCKET_NAME
+    settings.GCS_BUCKET_NAME = new_bucket_name
+
+    # IMPORTANT: Re-initialize the tools/services so they pick up the new bucket name!
+    # The instances were created at import time with the old setting.
+    extraction_tools.gcs_service = extraction_tools.GCSService()
+    extraction_tools.text_extractor = extraction_tools.TextExtractor()
+    extraction_tools.image_extractor = extraction_tools.ImageExtractor()
+    extraction_tools.video_extractor = extraction_tools.VideoExtractor()
+
     if dry_run:
         print("[INFO] Dry Run enabled. Spanner writes will be mocked but LOGGED below.")
         # Patch the method on the service instance
