@@ -3,6 +3,12 @@ PROJECT_FILE="~/project_id.txt"
 export REPO_NAME="christmas_agent"
 # ---------------------
 
+# --- Spanner Database Configuration ---
+INSTANCE_ID="survivor-network"
+DATABASE_ID="graph-db"
+GRAPH_NAME="SurvivorGraph"
+# ---------------------
+
 echo "--- Setting Google Cloud Environment Variables ---"
 
 # --- Authentication Check ---
@@ -61,27 +67,37 @@ echo "--- Configuring Google Cloud Storage Bucket ---"
 export BUCKET_NAME="$PROJECT_ID-bucket"
 echo "Bucket name: $BUCKET_NAME"
 
-if gsutil ls -b "gs://${BUCKET_NAME}" > /dev/null 2>&1; then
-    echo "Bucket gs://${BUCKET_NAME} already exists."
+if gsutil ls -b "gs://$BUCKET_NAME" > /dev/null 2>&1; then
+    echo "Bucket gs://$BUCKET_NAME already exists."
 else
-    echo "Creating bucket gs://${BUCKET_NAME}..."
+    echo "Creating bucket gs://$BUCKET_NAME..."
     
-    if gcloud storage buckets create "gs://${BUCKET_NAME}" \
+    if gcloud storage buckets create "gs://$BUCKET_NAME" \
         --project="$PROJECT_ID" \
         --location="$REGION" \
         --uniform-bucket-level-access \
         --quiet; then
-        echo "Bucket gs://${BUCKET_NAME} created successfully."
+        echo "Bucket gs://$BUCKET_NAME created successfully."
     else
-        echo "Error: Failed to create bucket gs://${BUCKET_NAME}"
+        echo "Error: Failed to create bucket gs://$BUCKET_NAME"
         return 1
     fi
 fi
 
-export GOOGLE_CLOUD_BUCKET="gs://${BUCKET_NAME}"
+export GOOGLE_CLOUD_BUCKET="gs://$BUCKET_NAME"
 export GCS_BUCKET_NAME="$BUCKET_NAME"
 echo "Exported GOOGLE_CLOUD_BUCKET=$GOOGLE_CLOUD_BUCKET"
 echo "Exported GCS_BUCKET_NAME=$GCS_BUCKET_NAME"
+
+# --- Spanner Database Configuration ---
+echo "--- Configuring Spanner Database Variables ---"
+
+export INSTANCE_ID="$INSTANCE_ID"
+export DATABASE_ID="$DATABASE_ID"
+export GRAPH_NAME="$GRAPH_NAME"
+echo "Exported INSTANCE_ID=$INSTANCE_ID"
+echo "Exported DATABASE_ID=$DATABASE_ID"
+echo "Exported GRAPH_NAME=$GRAPH_NAME"
 
 # --- Write to .env file ---
 echo "--- Writing to .env file ---"
@@ -96,6 +112,9 @@ GOOGLE_CLOUD_LOCATION=$GOOGLE_CLOUD_LOCATION
 BUCKET_NAME=$BUCKET_NAME
 GOOGLE_CLOUD_BUCKET=$GOOGLE_CLOUD_BUCKET
 GCS_BUCKET_NAME=$GCS_BUCKET_NAME
+INSTANCE_ID=$INSTANCE_ID
+DATABASE_ID=$DATABASE_ID
+GRAPH_NAME=$GRAPH_NAME
 USE_MEMORY_BANK=false
 EOF
 echo ".env file updated."

@@ -31,7 +31,9 @@ class Settings(BaseSettings):
             self.SPANNER_DATABASE_ID = self.DATABASE_ID
 
     class Config:
-        env_file = ".env"
+        # Resolve .env file relative to this file (backend/config/settings.py -> ../../.env)
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")
+        env_file = env_path
         extra = "ignore"
 
 settings = Settings()
