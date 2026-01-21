@@ -3,7 +3,26 @@ from google.adk.agents import Agent, SequentialAgent, LlmAgent
 from tools.extraction_tools import (
     upload_media, extract_from_media, save_to_spanner, process_media_upload
 )
-from agent.memory_agent import memory_agent
+from google.adk.agents.callback_context import CallbackContext
+from google.genai import types
+from typing import Optional
+import asyncio
+
+async def add_session_to_memory(
+        callback_context: CallbackContext
+) -> Optional[types.Content]:
+    """Automatically save completed sessions to memory bank in the background"""
+    if hasattr(callback_context, "_invocation_context"):
+        invocation_context = callback_context._invocation_context
+        if invocation_context.memory_service:
+            # Use create_task to run this in the background without blocking the response
+            asyncio.create_task(
+                invocation_context.memory_service.add_session_to_memory(
+                    invocation_context.session
+                )
+            )
+            logger.info("Scheduled session save to memory bank in background")
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +71,8 @@ Include survivor_id if it was provided in the upload step.
 
 Return the save statistics.""",
     tools=[save_to_spanner],
-    output_key="spanner_result"
+    output_key="spanner_result",
+    after_agent_callback=add_session_to_memory if settings.USE_MEMORY_BANK else None
 )
 
 summary_agent = LlmAgent(
@@ -70,6 +90,7 @@ Summarize:
 3. Relationships identified
 4. What was saved to the database (broadcast ID, number of entities)
 5. Any issues encountered
+6. Mention that the data is also being synced to the memory bank.
 
 Be concise but informative.""",
     output_key="final_summary"

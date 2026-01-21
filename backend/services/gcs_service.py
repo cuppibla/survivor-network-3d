@@ -15,8 +15,11 @@ class GCSService:
     def __init__(self):
         # Initialize client with optional credentials if configured via env
         self.client = storage.Client(project=settings.PROJECT_ID)
-        self.bucket = self.client.bucket(settings.GCS_BUCKET_NAME)
         self.config = ExtractionConfig()
+
+    @property
+    def bucket(self):
+        return self.client.bucket(settings.GCS_BUCKET_NAME)
     
     def detect_media_type(self, file_path: str) -> MediaType:
         """Detect media type from file extension"""

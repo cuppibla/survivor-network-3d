@@ -2,7 +2,7 @@ import os
 import asyncio
 from google.adk import Runner
 from google.genai.types import Content, Part
-from agent.multimedia_agent import uploader_agent
+from agent.multimedia_agent import upload_agent
 from config import settings
 from google.cloud import storage
 import uuid
@@ -57,7 +57,7 @@ async def run_single_upload(runner, session_service, file_path, user_id="test-us
     message_text = f"Attached file path: {abs_path}"
     user_msg = Content(role="user", parts=[Part(text=message_text)])
     
-    app_name = f"test-uploader-{uuid.uuid4().hex[:6]}"
+    app_name = "test-uploader"
     session = await session_service.create_session(user_id=user_id, app_name=app_name)
     print(f"Created session {session.id}")
     
@@ -107,7 +107,7 @@ async def run_test():
     # Initialize Runner with uploader_agent
     from google.adk.sessions import InMemorySessionService
     session_service = InMemorySessionService()
-    runner = Runner(agent=uploader_agent, app_name="test-uploader", session_service=session_service)
+    runner = Runner(agent=upload_agent, app_name="test-uploader", session_service=session_service)
     
     results = {}
     for test_file in TEST_FILES:
