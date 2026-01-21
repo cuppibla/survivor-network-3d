@@ -8,7 +8,7 @@ from extractors.base_extractor import (
     ExtractionResult, ExtractedEntity, ExtractedRelationship,
     EntityType, RelationshipType
 )
-from config import settings
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +16,9 @@ class SpannerGraphService:
     """Service to sync extracted data to Spanner Graph DB"""
     
     def __init__(self):
-        self.client = spanner.Client(project=settings.PROJECT_ID)
-        self.instance = self.client.instance(settings.SPANNER_INSTANCE_ID)
-        self.database = self.instance.database(settings.SPANNER_DATABASE_ID)
+        self.client = spanner.Client(project=os.getenv('PROJECT_ID'))
+        self.instance = self.client.instance(os.getenv('INSTANCE_ID'))
+        self.database = self.instance.database(os.getenv('DATABASE_ID'))
         
         # Map EntityType to table info
         self.node_table_config = {
@@ -337,7 +337,7 @@ class SpannerGraphService:
     def query_graph(self, gql_query: str) -> List[Dict]:
         """Execute a GQL query on the graph"""
         with self.database.snapshot() as snapshot:
-            results = snapshot.execute_sql(f"GRAPH {settings.GRAPH_NAME} {gql_query}")
+            results = snapshot.execute_sql(f"GRAPH {os.getenv('GRAPH_NAME')} {gql_query}")
             # Convert results to dicts
             out = []
             for row in results:

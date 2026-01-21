@@ -1,19 +1,19 @@
 import os
 from typing import List, Dict, Any, Optional
 from google.cloud import spanner
-from config import settings
 
 class SpannerService:
     def __init__(self):
         # Set credentials if provided
-        if settings.GOOGLE_APPLICATION_CREDENTIALS:
-            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = settings.GOOGLE_APPLICATION_CREDENTIALS
+        creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        if creds:
+            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = creds
         
         # Initialize Spanner client
-        self.client = spanner.Client(project=settings.PROJECT_ID)
-        self.instance = self.client.instance(settings.INSTANCE_ID)
-        self.database = self.instance.database(settings.DATABASE_ID)
-        self.graph_name = settings.GRAPH_NAME
+        self.client = spanner.Client(project=os.getenv('PROJECT_ID'))
+        self.instance = self.client.instance(os.getenv('INSTANCE_ID'))
+        self.database = self.instance.database(os.getenv('DATABASE_ID'))
+        self.graph_name = os.getenv('GRAPH_NAME')
 
     def execute_gql(self, query: str) -> List[Dict[str, Any]]:
         """

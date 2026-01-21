@@ -6,7 +6,6 @@ from google.adk import Runner
 from google.adk.sessions import InMemorySessionService, VertexAiSessionService
 from google.adk.memory import InMemoryMemoryService, VertexAiMemoryBankService
 from google.genai.types import Content, Part
-from config import settings
 import os
 import time
 
@@ -14,20 +13,27 @@ router = APIRouter()
 
 # Initialize Services
 # Ensure API Key is set for GenAI client
-if settings.GOOGLE_API_KEY and "GOOGLE_API_KEY" not in os.environ:
-    os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
+google_api_key = os.getenv('GOOGLE_API_KEY')
+if google_api_key and "GOOGLE_API_KEY" not in os.environ:
+    os.environ["GOOGLE_API_KEY"] = google_api_key
 
-if settings.USE_MEMORY_BANK and settings.AGENT_ENGINE_ID:
-    print(f"INFO: Initializing Vertex AI Services with Agent Engine: {settings.AGENT_ENGINE_ID}")
+use_memory_bank = os.getenv('USE_MEMORY_BANK', 'false').lower() == 'true'
+agent_engine_id = os.getenv('AGENT_ENGINE_ID')
+
+if use_memory_bank and agent_engine_id:
+    project_id = os.getenv('PROJECT_ID')
+    location = os.getenv('REGION')
+    
+    print(f"INFO: Initializing Vertex AI Services with Agent Engine: {agent_engine_id}")
     session_service = VertexAiSessionService(
-        project=settings.PROJECT_ID, 
-        location=settings.LOCATION, 
-        agent_engine_id=settings.AGENT_ENGINE_ID
+        project=project_id, 
+        location=location, 
+        agent_engine_id=agent_engine_id
     )
     memory_service = VertexAiMemoryBankService(
-        project=settings.PROJECT_ID, 
-        location=settings.LOCATION, 
-        agent_engine_id=settings.AGENT_ENGINE_ID
+        project=project_id, 
+        location=location, 
+        agent_engine_id=agent_engine_id
     )
 else:
     print("INFO: Initializing InMemory Services")

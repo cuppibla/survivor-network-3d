@@ -9,7 +9,7 @@ from .base_extractor import (
     ExtractedRelationship, EntityType, RelationshipType
 )
 from services.gcs_service import GCSService
-from config import settings
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,8 @@ class ImageExtractor(BaseExtractor):
     def __init__(self):
         self.client = genai.Client(
             vertexai=True, 
-            project=settings.PROJECT_ID, 
-            location=settings.LOCATION
+            project=os.getenv('PROJECT_ID'), 
+            location=os.getenv('REGION')
         )
         self.model_name = 'gemini-2.5-flash'
         self.gcs_service = GCSService()

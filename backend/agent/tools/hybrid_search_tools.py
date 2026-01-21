@@ -12,7 +12,7 @@ from services.hybrid_search_service import (
     SearchResult
 )
 from typing import Optional, List
-from config import settings
+import os
 
 # Singleton service
 _service: Optional[HybridSearchService] = None
@@ -23,9 +23,9 @@ def _get_service() -> HybridSearchService:
     global _service
     if _service is None:
         _service = HybridSearchService(
-            project_id=settings.PROJECT_ID,
-            instance_id=settings.INSTANCE_ID,
-            database_id=settings.DATABASE_ID
+            project_id=os.getenv('PROJECT_ID'),
+            instance_id=os.getenv('INSTANCE_ID'),
+            database_id=os.getenv('DATABASE_ID')
         )
     return _service
 

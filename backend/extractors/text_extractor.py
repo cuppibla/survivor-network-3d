@@ -9,7 +9,7 @@ from .base_extractor import (
     ExtractedRelationship, EntityType, RelationshipType
 )
 from services.gcs_service import GCSService
-from config import settings
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,8 @@ class TextExtractor(BaseExtractor):
         # It picks up GOOGLE_APPLICATION_CREDENTIALS or GOOGLE_API_KEY from env
         self.client = genai.Client(
             vertexai=True, 
-            project=settings.PROJECT_ID, 
-            location=settings.LOCATION
+            project=os.getenv('PROJECT_ID'), 
+            location=os.getenv('REGION')
         )
         self.model_name = 'gemini-2.5-flash' # Using flash for speed/cost.
         # Note: 'gemini-2.5-flash' mentioned in user prompt might not be available yet publicly, 

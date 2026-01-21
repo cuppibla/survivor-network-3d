@@ -22,8 +22,8 @@ async def add_session_to_memory(
                 )
             )
             logger.info("Scheduled session save to memory bank in background")
-from config import settings
 
+import os
 logger = logging.getLogger(__name__)
 
 # --- Option 2: Sequential Pipeline ---
@@ -72,7 +72,7 @@ Include survivor_id if it was provided in the upload step.
 Return the save statistics.""",
     tools=[save_to_spanner],
     output_key="spanner_result",
-    after_agent_callback=add_session_to_memory if settings.USE_MEMORY_BANK else None
+    after_agent_callback=add_session_to_memory if os.getenv('USE_MEMORY_BANK', 'false').lower() == 'true' else None
 )
 
 summary_agent = LlmAgent(

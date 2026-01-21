@@ -57,7 +57,7 @@ Survivor Network combines a React frontend with a FastAPI backend to provide vis
     ```
 
 3.  **Configuration:**
-    - Create a `.env` file in the `frontend` directory based on `.env.example`.
+    - No configuration needed! Defaults to connecting to `http://localhost:8000`.
 
 4.  **Run the Development Server:**
     ```bash
@@ -79,12 +79,7 @@ Survivor Network combines a React frontend with a FastAPI backend to provide vis
 | `LOCATION` | Vertex AI Location | `us-central1` |
 | `USE_MEMORY_BANK` | Enable Memory Bank agent | `True` |
 
-### Frontend (`frontend/.env`)
-
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `VITE_API_URL` | Backend API URL | `http://localhost:8000` |
-| `VITE_WS_URL` | Backend WebSocket URL | `ws://localhost:8000` |
+> **Note**: The frontend doesn't require a `.env` file. It connects to the backend at `http://localhost:8000` by default. Can be overridden: `VITE_API_URL=... npm run dev`
 
 ## Project Structure
 

@@ -5,7 +5,7 @@ import tempfile
 import mimetypes
 from typing import Tuple, Optional
 from google.cloud import storage
-from config import settings, ExtractionConfig, MediaType
+from config import ExtractionConfig, MediaType
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +14,12 @@ class GCSService:
     
     def __init__(self):
         # Initialize client with optional credentials if configured via env
-        self.client = storage.Client(project=settings.PROJECT_ID)
+        self.client = storage.Client(project=os.getenv('PROJECT_ID'))
         self.config = ExtractionConfig()
 
     @property
     def bucket(self):
-        return self.client.bucket(settings.GCS_BUCKET_NAME)
+        return self.client.bucket(os.getenv('GCS_BUCKET_NAME'))
     
     def detect_media_type(self, file_path: str) -> MediaType:
         """Detect media type from file extension"""
@@ -61,14 +61,14 @@ class GCSService:
         blob = self.bucket.blob(blob_name)
         blob.upload_from_filename(file_path)
         
-        gcs_uri = f"gs://{settings.GCS_BUCKET_NAME}/{blob_name}"
+        gcs_uri = f"gs://{os.getenv('GCS_BUCKET_NAME')}/{blob_name}"
         logger.info(f"Uploaded {media_type.value} to {gcs_uri}")
         
         return gcs_uri, media_type
     
     def download_to_temp(self, gcs_uri: str) -> str:
         """Download file from GCS to temp location"""
-        blob_name = gcs_uri.replace(f"gs://{settings.GCS_BUCKET_NAME}/", "")
+        blob_name = gcs_uri.replace(f"gs://{os.getenv('GCS_BUCKET_NAME')}/", "")
         blob = self.bucket.blob(blob_name)
         
         # Get extension from blob name
@@ -82,6 +82,6 @@ class GCSService:
     
     def read_text_content(self, gcs_uri: str) -> str:
         """Read text content directly from GCS"""
-        blob_name = gcs_uri.replace(f"gs://{settings.GCS_BUCKET_NAME}/", "")
+        blob_name = gcs_uri.replace(f"gs://{os.getenv('GCS_BUCKET_NAME')}/", "")
         blob = self.bucket.blob(blob_name)
         return blob.download_as_text()
