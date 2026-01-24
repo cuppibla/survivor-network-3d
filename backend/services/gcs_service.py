@@ -72,12 +72,17 @@ class GCSService:
 
     def generate_signed_url(self, blob_name: str, expiration=3600) -> str:
         """Generate a signed URL for temporary read access"""
-        blob = self.bucket.blob(blob_name)
-        return blob.generate_signed_url(
-            version="v4",
-            expiration=expiration,
-            method="GET"
-        )
+        try:
+            blob = self.bucket.blob(blob_name)
+            return blob.generate_signed_url(
+                version="v4",
+                expiration=expiration,
+                method="GET"
+            )
+        except Exception as e:
+            logger.warning(f"Could not generate signed URL (likely due to missing private key): {e}")
+            # Fallback to public URL or GCS URI
+            return f"https://storage.googleapis.com/{os.getenv('GCS_BUCKET_NAME')}/{blob_name}"
     
     def download_to_temp(self, gcs_uri: str) -> str:
         """Download file from GCS to temp location"""
