@@ -83,49 +83,70 @@ async def chat(request: ChatRequest):
         # Accumulate response text
         response_text = ""
         
-        # Prepare message parts
-        message_parts = [Part(text=request.message)]
-        if request.attachments:
-            for attachment in request.attachments:
+        # Helper to run agent cycle
+        async def run_agent_cycle(parts, context_text=""):
+            nonlocal response_text
+            async for event in runner.run_async(
+                user_id=user_id, 
+                session_id=session_id, 
+                new_message=Content(role="user", parts=parts)
+            ):
+                try:
+                    if hasattr(event, "text") and event.text:
+                        response_text += event.text
+                    elif hasattr(event, "content") and event.content:
+                        for part in event.content.parts:
+                            if hasattr(part, "text") and part.text:
+                                response_text += part.text
+                    elif hasattr(event, "parts"):
+                         for part in event.parts:
+                            if hasattr(part, "text") and part.text:
+                                response_text += part.text
+                except Exception as e:
+                    print(f"Error processing event: {e}")
+            response_text += "\n\n"
+
+        # Logic to handle multiple attachments:
+        # If multiple attachments, we process them sequentially to ensure the SequentialAgent pipeline 
+        # (Upload -> Extract -> Save) runs for EACH file.
+        if request.attachments and len(request.attachments) > 0:
+            total_files = len(request.attachments)
+            for i, attachment in enumerate(request.attachments):
+                print(f"DEBUG: Processing attachment {i+1}/{total_files}: {attachment['path']}")
+                
+                current_parts = []
+                # For the first attachment, include the user's actual message text
+                # For subsequent, we can imply context or repeat a simplified version
+                if i == 0:
+                     current_parts.append(Part(text=request.message))
+                else:
+                     current_parts.append(Part(text=f"Processing next attachment ({i+1}/{total_files})..."))
+
                 try:
                     with open(attachment["path"], "rb") as f:
                         file_data = f.read()
-                        message_parts.append(Part.from_bytes(data=file_data, mime_type=attachment["mime_type"]))
+                        current_parts.append(Part.from_bytes(data=file_data, mime_type=attachment["mime_type"]))
                     # Append file path as text context for the agent tools
-                    message_parts.append(Part(text=f"\n[System] Attached file path: {attachment['path']}"))
+                    current_parts.append(Part(text=f"\n[System] Attached file path: {attachment['path']}"))
+                    
+                    # Run the cycle for this attachment
+                    await run_agent_cycle(current_parts)
+                    
                 except Exception as e:
-                    print(f"Error reading attachment {attachment['path']}: {e}")
+                    error_msg = f"Error reading/processing attachment {attachment['path']}: {e}"
+                    print(error_msg)
+                    response_text += f"\n[Error processing {os.path.basename(attachment['path'])}: {str(e)}]\n"
 
-        # Execute agent using Runner
-        # Wrap message in Content object as required by Runner
-        async for event in runner.run_async(
-            user_id=user_id, 
-            session_id=session_id, 
-            new_message=Content(role="user", parts=message_parts)
-        ):
-            # Inspect event structure to find text content
-            try:
-                # Check for standard response structures
-                if hasattr(event, "text") and event.text:
-                    response_text += event.text
-                elif hasattr(event, "content") and event.content:
-                    for part in event.content.parts:
-                        if hasattr(part, "text") and part.text:
-                            response_text += part.text
-                elif hasattr(event, "parts"):
-                     for part in event.parts:
-                        if hasattr(part, "text") and part.text:
-                            response_text += part.text
-            except Exception as e:
-                # Log internal processing errors but continue
-                print(f"Error processing event: {e}")
-                pass
-                
-        if not response_text:
+        else:
+            # No attachments, standard single run
+            message_parts = [Part(text=request.message)]
+            await run_agent_cycle(message_parts)
+
+        if not response_text.strip():
             response_text = "I received your message, but I couldn't generate a text response."
 
         return ChatResponse(
-            answer=response_text,
+            answer=response_text.strip(),
             gql_query=None,
             nodes_to_highlight=[],
             edges_to_highlight=[],
