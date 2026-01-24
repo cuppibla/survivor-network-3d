@@ -325,6 +325,22 @@ class SpannerGraphService:
                              b_survivor_id = eid
                              break
                 
+                # If still no survivor ID, use/create a default "Unknown Survivor"
+                if not b_survivor_id:
+                    unknown_name = "Unknown Survivor"
+                    existing_id = self._find_entity_by_name(transaction, EntityType.SURVIVOR, unknown_name)
+                    if existing_id:
+                        b_survivor_id = existing_id
+                    else:
+                        # Create default
+                        default_survivor = ExtractedEntity(
+                            name=unknown_name, 
+                            entity_type=EntityType.SURVIVOR,
+                            properties={"status": "Unknown", "description": "System default for unassigned broadcasts"}
+                        )
+                        b_survivor_id = self._create_entity(transaction, default_survivor)
+                        stats['entities_created'] += 1
+
                 bid = self._create_broadcast(transaction, extraction_result.media_uri, extraction_result, b_survivor_id)
                 stats['broadcast_id'] = bid
             except Exception as e:
