@@ -58,19 +58,21 @@ export const HandTrackingControl: React.FC<HandTrackingControlProps> = ({ onHand
                 console.log("[HandTracking] Step 1: Checking model file...");
 
                 const modelUrl = "/models/hand_landmarker.task";
-                const checkResponse = await fetch(modelUrl, { method: 'GET' });
+                const checkResponse = await fetch(modelUrl);
 
                 if (!checkResponse.ok) {
                     throw new Error(`Model file HTTP ${checkResponse.status}`);
                 }
 
-                const contentLength = checkResponse.headers.get('content-length');
-                const fileSize = contentLength ? parseInt(contentLength) : 0;
+                // Verify size by reading blob (headers can be unreliable in proxies)
+                const blob = await checkResponse.blob();
+                const fileSize = blob.size;
                 console.log(`[HandTracking] Model file size: ${(fileSize / 1024 / 1024).toFixed(2)} MB`);
 
                 if (fileSize < 1000000) { // Less than 1MB is suspicious
                     throw new Error(`Model file too small (${fileSize} bytes). Re-download required.`);
                 }
+
 
                 setDebugInfo(`Model: ${(fileSize / 1024 / 1024).toFixed(1)}MB`);
 
@@ -323,7 +325,7 @@ export const HandTrackingControl: React.FC<HandTrackingControlProps> = ({ onHand
             <div className="absolute top-0 left-0 w-full p-2 bg-black/70 text-[10px] font-mono z-30 flex items-center gap-2"
                 style={{ color: isError ? '#ef4444' : '#4ade80' }}>
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${status.includes('Detected') ? 'bg-green-500 animate-pulse' :
-                        isError ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
+                    isError ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
                     }`} />
                 <span className="truncate">{status}</span>
             </div>

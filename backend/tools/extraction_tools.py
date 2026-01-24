@@ -39,11 +39,12 @@ def upload_media(file_path: str, survivor_id: Optional[str] = None) -> Dict[str,
         if not os.path.exists(file_path):
             return {"status": "error", "error": f"File not found: {file_path}"}
         
-        gcs_uri, media_type = gcs_service.upload_file(file_path, survivor_id)
+        gcs_uri, media_type, signed_url = gcs_service.upload_file(file_path, survivor_id)
         
         return {
             "status": "success",
             "gcs_uri": gcs_uri,
+            "signed_url": signed_url,
             "media_type": media_type.value,
             "file_name": os.path.basename(file_path),
             "survivor_id": survivor_id
@@ -53,13 +54,14 @@ def upload_media(file_path: str, survivor_id: Optional[str] = None) -> Dict[str,
         return {"status": "error", "error": str(e)}
 
 
-async def extract_from_media(gcs_uri: str, media_type: str) -> Dict[str, Any]:
+async def extract_from_media(gcs_uri: str, media_type: str, signed_url: Optional[str] = None) -> Dict[str, Any]:
     """
     Extract entities and relationships from uploaded media.
     
     Args:
         gcs_uri: GCS URI of the uploaded file
         media_type: Type of media (text/image/video)
+        signed_url: Optional signed URL for public/temporary access
         
     Returns:
         Dict with extraction results
@@ -77,6 +79,12 @@ async def extract_from_media(gcs_uri: str, media_type: str) -> Dict[str, Any]:
             result = await video_extractor.extract(gcs_uri)
         else:
             return {"status": "error", "error": f"Unsupported media type: {media_type}"}
+            
+        # Inject signed URL into broadcast info if present
+        if signed_url:
+            if not result.broadcast_info:
+                result.broadcast_info = {}
+            result.broadcast_info['thumbnail_url'] = signed_url
         
         return {
             "status": "success",
@@ -152,7 +160,8 @@ async def process_media_upload(file_path: str, survivor_id: Optional[str] = None
     # Step 2: Extract
     extraction_data = await extract_from_media(
         upload_result['gcs_uri'],
-        upload_result['media_type']
+        upload_result['media_type'],
+        upload_result.get('signed_url')
     )
     if extraction_data['status'] != 'success':
         return {**upload_result, **extraction_data}

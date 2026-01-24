@@ -504,3 +504,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Force exit to prevent annoying Google Cloud Spanner metrics export errors on shutdown
+    # regarding "One or more points were written more frequently..."
+    os._exit(0)

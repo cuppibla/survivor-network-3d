@@ -13,6 +13,7 @@ class GCSService:
     """Handle all GCS operations"""
     
     def __init__(self):
+        print("DEBUG: Initializing GCSService from local file")
         # Initialize client with optional credentials if configured via env
         self.client = storage.Client(project=os.getenv('PROJECT_ID'))
         self.config = ExtractionConfig()
@@ -47,7 +48,7 @@ class GCSService:
                     return MediaType.AUDIO
             return MediaType.TEXT  # Default fallback
     
-    def upload_file(self, file_path: str, survivor_id: Optional[str] = None) -> Tuple[str, MediaType]:
+    def upload_file(self, file_path: str, survivor_id: Optional[str] = None) -> Tuple[str, MediaType, str]:
         """Upload file to GCS, organized by media type"""
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -64,7 +65,19 @@ class GCSService:
         gcs_uri = f"gs://{os.getenv('GCS_BUCKET_NAME')}/{blob_name}"
         logger.info(f"Uploaded {media_type.value} to {gcs_uri}")
         
-        return gcs_uri, media_type
+        # Generate signed URL for immediate access
+        signed_url = self.generate_signed_url(blob_name)
+        
+        return gcs_uri, media_type, signed_url
+
+    def generate_signed_url(self, blob_name: str, expiration=3600) -> str:
+        """Generate a signed URL for temporary read access"""
+        blob = self.bucket.blob(blob_name)
+        return blob.generate_signed_url(
+            version="v4",
+            expiration=expiration,
+            method="GET"
+        )
     
     def download_to_temp(self, gcs_uri: str) -> str:
         """Download file from GCS to temp location"""

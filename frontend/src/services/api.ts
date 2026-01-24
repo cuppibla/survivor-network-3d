@@ -1,9 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Use relative path to leverage Vite proxy in development
+// This avoids CORS issues and ensures requests go through the dev server
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
+
     headers: {
         'Content-Type': 'application/json',
     },

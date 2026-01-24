@@ -142,3 +142,66 @@ These should trigger the Keyword method because they are specific and direct.
     -   *Why*: "Fishing" is a specific skill name.
 -   **"Show me combat specialists"**
     -   *Why*: "Combat" is a category.
+# Verification Guide: Graph Updates
+
+After uploading the "Field Report" image, use these steps to verify that the Spanner database and Graph have been correctly updated.
+
+## 1. Verify Broadcast Processing (SQL)
+Check if the image was processed and linked to **David Chen**.
+
+```sql
+SELECT 
+  b.broadcast_id, 
+  b.title, 
+  b.processed, 
+  s.name as survivor_name
+FROM Broadcasts b
+JOIN Survivors s ON b.survivor_id = s.survivor_id
+WHERE b.processed = true
+ORDER BY b.created_at DESC
+LIMIT 1;
+```
+**Success Criteria:**
+- `survivor_name` should be **David Chen**.
+- `title` should be related to the field report (or "Upload: image").
+- `processed` must be `true`.
+
+## 2. Verify New Resource Creation (SQL)
+Check if the **"Energy Crystal"** (or similar extracted name) was added.
+
+```sql
+SELECT * FROM Resources 
+WHERE name LIKE '%Crystal%' 
+OR name LIKE '%Energy%'
+ORDER BY resource_id DESC;
+```
+**Success Criteria:**
+- A new row exists with `type` likely inferred (e.g., 'power' or 'tool').
+
+## 3. Verify Graph Relationships (GQL)
+Use **Graph Query Language (GQL)** to confirm David Chen is now linked to the new resource and biome.
+
+### Query: What did David Chen find recently?
+```sql
+GRAPH SurvivorGraph
+MATCH (s:Survivor {name: "David Chen"})-[f:FOUND]->(r:Resource)
+RETURN s.name AS survivor, f.found_at, r.name AS resource, r.type
+```
+**Success Criteria:**
+- Should return a row linking "David Chen" to "Energy Crystal".
+
+### Query: Where is David Chen now?
+```sql
+GRAPH SurvivorGraph
+MATCH (s:Survivor {name: "David Chen"})-[i:IN_BIOME]->(b:Biome)
+RETURN s.name AS survivor, b.name AS biome
+```
+**Success Criteria:**
+- Should return "David Chen" in "Bioluminescent" (or similar extracted biome name).
+
+## 4. Troubleshooting
+If the queries return nothing:
+1.  **Check `Broadcasts` table**: If `processed` is false or missing, the upload failed.
+2.  **Check extraction logs**: The agent might have failed to identify "David Chen" exactly.
+    - Run: `SELECT * FROM Broadcasts ORDER BY created_at DESC LIMIT 1` to get the ID.
+    - If `survivor_id` is null, the name matching didn't work.

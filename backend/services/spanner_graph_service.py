@@ -143,7 +143,7 @@ class SpannerGraphService:
         # Survivor
         if entity.entity_type == EntityType.SURVIVOR:
             columns.append('created_at')
-            values.append(spanner.COMMIT_TIMESTAMP)
+            values.append(datetime.utcnow())
             for k in ['callsign', 'role', 'status', 'biome', 'quadrant', 'description']:
                 if k in entity.properties:
                     columns.append(k)
@@ -221,7 +221,7 @@ class SpannerGraphService:
                 columns.append(k)
                 if k == 'found_at':
                     # Handle timestamp conversion if needed, or use string/commit_timestamp
-                     values.append(spanner.COMMIT_TIMESTAMP) # Simple for now
+                     values.append(datetime.utcnow()) 
                 elif k == 'match_score':
                      values.append(float(relationship.properties[k]))
                 else:
@@ -240,7 +240,7 @@ class SpannerGraphService:
         info = extraction_result.broadcast_info or {}
         
         columns = ['broadcast_id', 'gcs_uri', 'processed', 'processed_at', 'created_at']
-        values = [broadcast_id, gcs_uri, True, spanner.COMMIT_TIMESTAMP, spanner.COMMIT_TIMESTAMP]
+        values = [broadcast_id, gcs_uri, True, datetime.utcnow(), datetime.utcnow()]
         
         if survivor_id:
             columns.append('survivor_id')
@@ -257,6 +257,10 @@ class SpannerGraphService:
             columns.append('transcript')
             values.append(str(info['transcript'])[:10000]) # Limit
             
+        if 'thumbnail_url' in info:
+             columns.append('thumbnail_url')
+             values.append(info['thumbnail_url'])
+
         if 'duration_seconds' in info and info['duration_seconds']:
              # Check if it's integer
              try:

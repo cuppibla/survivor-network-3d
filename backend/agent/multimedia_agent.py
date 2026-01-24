@@ -49,8 +49,8 @@ extraction_agent = LlmAgent(
 
 Previous step result: {upload_result}
 
-Use `extract_from_media(gcs_uri, media_type)` with the values from the upload result.
-The gcs_uri is in upload_result['gcs_uri'] and media_type in upload_result['media_type'].
+Use `extract_from_media(gcs_uri, media_type, signed_url)` with the values from the upload result.
+The gcs_uri is in upload_result['gcs_uri'], media_type in upload_result['media_type'], and signed_url in upload_result['signed_url'].
 
 Return the extraction results including entities and relationships found.""",
     tools=[extract_from_media],

@@ -26,45 +26,67 @@ class ImageExtractor(BaseExtractor):
         self.gcs_service = GCSService()
     
     def _get_extraction_prompt(self) -> str:
-        return """Analyze this image for a Survivor Network emergency response system.
+        return """Analyze this image for a Survivor Network emergency response system. 
+
+## Known Entities Context (Use these exact names/IDs if confident):
+
+### Survivors:
+- **David Chen** (Engineer): Yellow/Amber armor/gear.
+- **Dr. Elena Frost** (Xenobiologist): Blue/Ice theme, medical coat under gear, scanner.
+- **Lt. Sarah Park** (Navigator): Purple/Glowing accents, holds datapad/map.
+- **Captain Yuki Tanaka** (Pilot): Red/Volcanic theme, flight suit.
+
+### Biomes:
+- **Bioluminescent**: Dark forest, glowing purple/neon plants, mushrooms.
+- **Cryo**: Ice, snow, glaciers, blue/white temperature.
+- **Fossilized**: Desert, amber, giant bones, yellow/orange rocky terrain.
+- **Volcanic**: Lava, ash, dark rocks, red/orange fire.
+
+### Resource Types:
+- **Amber Fuel**: Yellow/orange crystals or liquid.
+- **Medicinal Plants**: Glowing herbs, fungi.
+- **Geothermal**: Steam vents, power cells.
+- **Water**: Ice blocks, clear liquid containers.
 
 ## Look for and identify:
 
 1. **Survivors/People**: 
    - Count, apparent condition, roles (medic, leader, etc.)
-   - Any visible name tags, callsigns, or identifiers
+   - Match against Known Entities above by visual cues (color, gear).
+   - Any visible name tags, callsigns, or identifiers.
 
-2. **Resources**:
+2. **Text/Field Report Analysis (CRITICAL)**:
+   - If the image contains text (handwritten notes, clipboard, diary, screen):
+     - **Transcribe it accurately**.
+     - Treat stated facts in text as high-confidence data (e.g., "Found energy crystal" = explicit Resource discovery).
+     - Extract headers like "AGENT", "LOCATION", "STATUS" to map to properties.
+
+3. **Resources**:
    - Food, water, medical supplies, tools, vehicles, shelter materials
    - Estimate quantities and condition
 
-3. **Environment/Biome**:
+4. **Environment/Biome**:
    - Location type (urban, forest, desert, coastal, mountain, etc.)
-   - Weather, hazards, quadrant if visible (NE/NW/SE/SW)
+   - Match against Known Biomes.
 
-4. **Needs apparent**:
+5. **Needs apparent**:
    - Medical attention, shelter, food/water, rescue
    - Urgency level
-
-5. **Skills being demonstrated**:
-   - Medical care, construction, navigation, communication, etc.
-
-6. **Any visible text**:
-   - Signs, messages, coordinates, warnings
 
 ## Return JSON (no markdown):
 {
     "summary": "Description of the scene",
-    "scene_type": "camp|rescue|supply_depot|hazard|medical|shelter|other",
+    "scene_type": "camp|rescue|supply_depot|hazard|medical|shelter|field_report|other",
     "urgency_level": "critical|high|medium|low",
     "entities": [
         {
             "entity_type": "Survivor|Skill|Need|Resource|Biome",
-            "name": "descriptive name",
+            "name": "descriptive name or exact Known Entity name",
             "properties": {
                 "description": "what you see",
                 "condition": "good|fair|poor",
-                "quantity": "number if applicable"
+                "quantity": "number if applicable",
+                "source_text": "extracted text if applicable"
             },
             "confidence": 0.0-1.0
         }
