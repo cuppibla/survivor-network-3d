@@ -1,4 +1,32 @@
 from google.adk.agents import Agent
+import os
+import logging
+import asyncio
+from typing import Optional
+from google.genai import types
+from google.adk.agents.callback_context import CallbackContext
+from google.adk.tools.preload_memory_tool import PreloadMemoryTool
+
+logger = logging.getLogger(__name__)
+
+async def add_session_to_memory(
+        callback_context: CallbackContext
+) -> Optional[types.Content]:
+    """Automatically save completed sessions to memory bank in the background"""
+    if hasattr(callback_context, "_invocation_context"):
+        invocation_context = callback_context._invocation_context
+        if invocation_context.memory_service:
+            # Use create_task to run this in the background without blocking the response
+            asyncio.create_task(
+                invocation_context.memory_service.add_session_to_memory(
+                    invocation_context.session
+                )
+            )
+            logger.info("Scheduled session save to memory bank in background")
+        else:
+            logger.warning("Memory service not available in invocation context")
+    else:
+        logger.warning("Callback context missing _invocation_context")
 
 from agent.multimedia_agent import multimedia_agent
 from agent.tools.survivor_tools import get_survivors_with_skill, get_all_survivors, get_urgent_needs
@@ -100,22 +128,33 @@ Match percentages indicate relevance (higher = better match).
 6. Delegate image/video to MultimediaSequentialAgent
 """
 
+USE_MEMORY_BANK = os.getenv("USE_MEMORY_BANK", "false").lower() == "true"
+
+agent_tools = [
+    # Exact match tools (fast)
+    get_survivors_with_skill,
+    get_all_survivors,
+    get_urgent_needs,
+    
+    # Hybrid search tools
+    hybrid_search,           # Smart auto-routing
+    semantic_search,         # Force RAG
+    keyword_search,          # Force keywords
+    find_similar_skills,     # Skill similarity
+    analyze_query,           # Debug tool
+]
+
+if USE_MEMORY_BANK:
+    logger.info("✅ Memory Bank is ENABLED in agent.py")
+    agent_tools.append(PreloadMemoryTool())
+else:
+    logger.info("❌ Memory Bank is DISABLED in agent.py (USE_MEMORY_BANK env var is false or missing)")
+
 root_agent = Agent(
     model="gemini-2.5-flash",
     name="survivor_network_agent",
     instruction=agent_instruction,
-    tools=[
-        # Exact match tools (fast)
-        get_survivors_with_skill,
-        get_all_survivors,
-        get_urgent_needs,
-        
-        # Hybrid search tools
-        hybrid_search,           # Smart auto-routing
-        semantic_search,         # Force RAG
-        keyword_search,          # Force keywords
-        find_similar_skills,     # Skill similarity
-        analyze_query,           # Debug tool
-    ],
-    sub_agents=[multimedia_agent]
+    tools=agent_tools,
+    sub_agents=[multimedia_agent],
+    after_agent_callback=add_session_to_memory if USE_MEMORY_BANK else None
 )

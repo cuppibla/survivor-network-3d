@@ -10,7 +10,7 @@ export const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 120000, // 120 second timeout
+    timeout: 120000, // 2 minute timeout
 });
 
 export const uploadFile = async (file: File) => {

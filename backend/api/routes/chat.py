@@ -20,6 +20,9 @@ if google_api_key and "GOOGLE_API_KEY" not in os.environ:
 use_memory_bank = os.getenv('USE_MEMORY_BANK', 'false').lower() == 'true'
 agent_engine_id = os.getenv('AGENT_ENGINE_ID')
 
+print(f"DEBUGGING CONFIG: USE_MEMORY_BANK raw='{os.getenv('USE_MEMORY_BANK')}' resolved={use_memory_bank}")
+print(f"DEBUGGING CONFIG: AGENT_ENGINE_ID='{agent_engine_id}'")
+
 if use_memory_bank and agent_engine_id:
     project_id = os.getenv('PROJECT_ID')
     location = os.getenv('REGION')
@@ -48,6 +51,7 @@ runner = Runner(
     memory_service=memory_service,
     app_name="survivor-network"
 )
+print(f"RUNNER INITIALIZED. Memory Service Type: {type(memory_service)}")
 
 # Global session map to persist mapping between client conversation_ids and ADK session_ids
 # Note: In a production environment with multiple workers, this should be in Redis or database

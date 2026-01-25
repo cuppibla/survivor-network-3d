@@ -3,26 +3,6 @@ from google.adk.agents import Agent, SequentialAgent, LlmAgent
 from tools.extraction_tools import (
     upload_media, extract_from_media, save_to_spanner, process_media_upload
 )
-from google.adk.agents.callback_context import CallbackContext
-from google.genai import types
-from typing import Optional
-import asyncio
-
-async def add_session_to_memory(
-        callback_context: CallbackContext
-) -> Optional[types.Content]:
-    """Automatically save completed sessions to memory bank in the background"""
-    if hasattr(callback_context, "_invocation_context"):
-        invocation_context = callback_context._invocation_context
-        if invocation_context.memory_service:
-            # Use create_task to run this in the background without blocking the response
-            asyncio.create_task(
-                invocation_context.memory_service.add_session_to_memory(
-                    invocation_context.session
-                )
-            )
-            logger.info("Scheduled session save to memory bank in background")
-
 import os
 logger = logging.getLogger(__name__)
 
@@ -71,18 +51,19 @@ Include survivor_id if it was provided in the upload step.
 
 Return the save statistics.""",
     tools=[save_to_spanner],
-    output_key="spanner_result",
-    after_agent_callback=add_session_to_memory if os.getenv('USE_MEMORY_BANK', 'false').lower() == 'true' else None
+    output_key="spanner_result"
 )
 
-summary_agent = LlmAgent(
-    name="SummaryAgent",
-    model="gemini-2.5-flash",
-    instruction="""Provide a user-friendly summary of the media processing.
 
-Upload: {upload_result}
-Extraction: {extraction_result}
-Database: {spanner_result}
+# Define summary instructions dynamically based on memory bank availability
+USE_MEMORY_BANK = os.getenv("USE_MEMORY_BANK", "false").lower() == "true"
+save_msg = "6. Mention that the data is also being synced to the memory bank." if USE_MEMORY_BANK else ""
+
+summary_instruction = f"""Provide a user-friendly summary of the media processing.
+
+Upload: {{upload_result}}
+Extraction: {{extraction_result}}
+Database: {{spanner_result}}
 
 Summarize:
 1. What file was processed (name and type)
@@ -90,9 +71,14 @@ Summarize:
 3. Relationships identified
 4. What was saved to the database (broadcast ID, number of entities)
 5. Any issues encountered
-6. Mention that the data is also being synced to the memory bank.
+{save_msg}
 
-Be concise but informative.""",
+Be concise but informative."""
+
+summary_agent = LlmAgent(
+    name="SummaryAgent",
+    model="gemini-2.5-flash",
+    instruction=summary_instruction,
     output_key="final_summary"
 )
 
