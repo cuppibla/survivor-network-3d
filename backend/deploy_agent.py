@@ -1,10 +1,13 @@
+
 import os
 import logging
 from dotenv import load_dotenv
 import vertexai
-from google.genai import types as genai_types
 from vertexai.preview import reasoning_engines
+
+# Import class-based types for Memory Bank
 from vertexai import types
+from google.genai import types as genai_types
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -21,19 +24,32 @@ if not PROJECT_ID:
 
 # Basic configuration types
 MemoryBankConfig = types.ReasoningEngineContextSpecMemoryBankConfig
+SimilaritySearchConfig = (
+    types.ReasoningEngineContextSpecMemoryBankConfigSimilaritySearchConfig
+)
+GenerationConfig = types.ReasoningEngineContextSpecMemoryBankConfigGenerationConfig
+
+# Advanced configuration types
 CustomizationConfig = types.MemoryBankCustomizationConfig
 MemoryTopic = types.MemoryBankCustomizationConfigMemoryTopic
 CustomMemoryTopic = types.MemoryBankCustomizationConfigMemoryTopicCustomMemoryTopic
 GenerateMemoriesExample = types.MemoryBankCustomizationConfigGenerateMemoriesExample
-ConversationSource = types.MemoryBankCustomizationConfigGenerateMemoriesExampleConversationSource
-ConversationSourceEvent = types.MemoryBankCustomizationConfigGenerateMemoriesExampleConversationSourceEvent
-ExampleGeneratedMemory = types.MemoryBankCustomizationConfigGenerateMemoriesExampleGeneratedMemory
+ConversationSource = (
+    types.MemoryBankCustomizationConfigGenerateMemoriesExampleConversationSource
+)
+ConversationSourceEvent = (
+    types.MemoryBankCustomizationConfigGenerateMemoriesExampleConversationSourceEvent
+)
+ExampleGeneratedMemory = (
+    types.MemoryBankCustomizationConfigGenerateMemoriesExampleGeneratedMemory
+)
 Content = genai_types.Content
 Part = genai_types.Part
 
 def register_agent_engine():
     """
     Registers an Agent Engine resource in Vertex AI to enable Sessions and Memory Bank.
+    This does NOT deploy the agent code to the cloud.
     """
     logger.info(f"Initializing Vertex AI for project: {PROJECT_ID}, location: {LOCATION}")
     vertexai.init(project=PROJECT_ID, location=LOCATION)
@@ -43,43 +59,32 @@ def register_agent_engine():
     logger.info("Defining custom topics...")
     
     custom_topics = [
-        # Topic 1: Survivor Identity & Skills
+        # Topic 1: Survivor Search Preferences
         MemoryTopic(
             custom_memory_topic=CustomMemoryTopic(
-                label="survivor_identity",
-                description="""Extract the user's survivor identity, including:
-                - Name
-                - Profession/Role (e.g., Doctor, Engineer, Scavenger)
-                - Key Skills (e.g., First Aid, Mechanics, Farming)
-                - Background details
+                label="search_preferences",
+                description="""Extract the user's preferences for how they search for survivors. Include:
+                - Preferred search methods (keyword, semantic, direct lookup)
+                - Common filters used (biome, role, status)
+                - Specific skills they value or frequently look for
+                - Geographic areas of interest (e.g., "forest biome", "mountain outpost")
                 
-                Example: "User is a former urgent care nurse named Sarah with advanced first aid skills."
+                Example: "User prefers semantic search for finding similar skills."
+                Example: "User frequently checks for survivors in the Swamp Biome."
                 """,
             )
         ),
-        # Topic 2: Current Status & Inventory
+        # Topic 2: Urgent Needs Context
         MemoryTopic(
             custom_memory_topic=CustomMemoryTopic(
-                label="survivor_status",
-                description="""Track the user's current condition and resources:
-                - Health status (injured, sick, healthy)
-                - Key inventory items (medkits, weapons, food supply)
-                - Current location or shelter status
+                label="urgent_needs_context",
+                description="""Track the user's focus on urgent needs and resource shortages. Include:
+                - Specific resources they are monitoring (food, medicine, ammo)
+                - Critical situations they are tracking
+                - Survivors they are particularly concerned about
                 
-                Example: "User has a broken leg and is low on antibiotics."
-                Example: "User has a stockpile of canned food and clean water."
-                """,
-            )
-        ),
-         # Topic 3: Goals & Missions
-        MemoryTopic(
-            custom_memory_topic=CustomMemoryTopic(
-                label="survivor_goals",
-                description="""Track the user's current objectives and missions:
-                - Immediate goals (find water, repair radio)
-                - Long-term goals (find other survivors, reach the coast)
-                
-                Example: "User is currently trying to repair the radio tower to contact help."
+                Example: "User is monitoring the medicine shortage in the Northern Camp."
+                Example: "User is looking for a doctor for the injured survivors."
                 """,
             )
         )
@@ -95,29 +100,27 @@ def register_agent_engine():
                     ConversationSourceEvent(
                         content=Content(
                             role="user",
-                            parts=[Part(text="My name is Jack, I used to be a construction worker before everything fell apart. I'm good at building reinforcements.")]
+                            parts=[Part(text="Find me someone who knows how to treat wounds. I prefer looking for concepts not just keywords.")]
                         )
                     ),
                     ConversationSourceEvent(
                         content=Content(
                             role="model",
-                            parts=[Part(text="Welcome Jack. Your construction skills will be vital for fortifying our shelter. Do you have any tools with you?")]
+                            parts=[Part(text="I'll use semantic search to find survivors with wound treatment skills.")]
                         )
                     ),
                     ConversationSourceEvent(
                         content=Content(
                             role="user",
-                            parts=[Part(text="I managed to save my toolbelt, so I have a hammer and some basic tools. But I'm running low on nails.")]
+                            parts=[Part(text="Great. Also, keep an eye out for anyone near the Old Hospital.")]
                         )
                     )
                 ]
             ),
             generated_memories=[
-                ExampleGeneratedMemory(fact="User's name is Jack"),
-                ExampleGeneratedMemory(fact="User was a construction worker"),
-                ExampleGeneratedMemory(fact="User is skilled at building reinforcements"),
-                ExampleGeneratedMemory(fact="User has a hammer and basic tools"),
-                ExampleGeneratedMemory(fact="User is running low on nails")
+                ExampleGeneratedMemory(fact="User prefers semantic search for skills"),
+                ExampleGeneratedMemory(fact="User is interested in survivors near the Old Hospital"),
+                ExampleGeneratedMemory(fact="User is looking for wound treatment skills")
             ]
         ),
         GenerateMemoriesExample(
@@ -126,28 +129,26 @@ def register_agent_engine():
                     ConversationSourceEvent(
                         content=Content(
                             role="user",
-                            parts=[Part(text="I'm injured. A wolf attacked me while I was scavenging. My leg is bleeding bad.")]
+                            parts=[Part(text="What are the most urgent needs right now?")]
                         )
                     ),
                     ConversationSourceEvent(
                         content=Content(
                             role="model",
-                            parts=[Part(text="That sounds serious! You need to stop the bleeding immediately. Do you have any bandages or a first aid kit?")]
+                            parts=[Part(text="The most urgent needs are Food in Sector 7 and Medical Supplies in the Bunker.")]
                         )
                     ),
                     ConversationSourceEvent(
                         content=Content(
                             role="user",
-                            parts=[Part(text="No, I used my last bandage yesterday. I need to find a pharmacy.")]
+                            parts=[Part(text="Okay, prioritize Food. We need to solve that first.")]
                         )
                     )
                 ]
             ),
             generated_memories=[
-                ExampleGeneratedMemory(fact="User entered 'injured' status due to wolf attack"),
-                ExampleGeneratedMemory(fact="User has a bleeding leg injury"),
-                ExampleGeneratedMemory(fact="User has no bandages remaining"),
-                ExampleGeneratedMemory(fact="User's immediate goal is to find a pharmacy")
+                ExampleGeneratedMemory(fact="User requested to prioritize Food needs"),
+                ExampleGeneratedMemory(fact="User checked for urgent needs in Sector 7 and Bunker")
             ]
         )
     ]
