@@ -23,10 +23,6 @@ async def add_session_to_memory(
                 )
             )
             logger.info("Scheduled session save to memory bank in background")
-        else:
-            logger.warning("Memory service not available in invocation context")
-    else:
-        logger.warning("Callback context missing _invocation_context")
 
 from agent.multimedia_agent import multimedia_agent
 from agent.tools.survivor_tools import get_survivors_with_skill, get_all_survivors, get_urgent_needs
@@ -145,10 +141,7 @@ agent_tools = [
 ]
 
 if USE_MEMORY_BANK:
-    logger.info("✅ Memory Bank is ENABLED in agent.py")
     agent_tools.append(PreloadMemoryTool())
-else:
-    logger.info("❌ Memory Bank is DISABLED in agent.py (USE_MEMORY_BANK env var is false or missing)")
 
 root_agent = Agent(
     model="gemini-2.5-flash",
